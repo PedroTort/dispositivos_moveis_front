@@ -1,10 +1,8 @@
-// src/screens/user/ProfileScreen.tsx
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
-import { useAuth } from '../../contexts/AuthContext'; // 1. Importar o hook useAuth
+import { useAuth } from '../../contexts/AuthContext';
 
 const ProfileScreen = () => {
-  // 2. Obter o usuário logado e a função de logout do nosso contexto
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
@@ -18,14 +16,13 @@ const ProfileScreen = () => {
         },
         { 
           text: "Sair", 
-          onPress: () => logout(), // 3. Botão que chama a função logout
+          onPress: () => logout(),
           style: "destructive"
         }
       ]
     );
   };
 
-  // Se por algum motivo não houver usuário (pouco provável nesta tela), mostra uma mensagem.
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>

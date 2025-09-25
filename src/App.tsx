@@ -1,4 +1,3 @@
-// App.tsx (ou seu arquivo de entrada principal)
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider } from './contexts/AuthContext';

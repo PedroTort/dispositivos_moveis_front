@@ -1,9 +1,7 @@
-// src/navigation/UserTabs.tsx
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/user/UserHomeScreen';
-// import CartScreen from '../screens/user/CartScreen';
 import ProfileScreen from '../screens/user/ProfileScreen';
 
 export type UserTabsParamList = {

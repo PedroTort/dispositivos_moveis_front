@@ -1,4 +1,3 @@
-// src/components/CategoryButton.tsx
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Category } from '../types';

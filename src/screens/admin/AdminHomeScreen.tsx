@@ -4,16 +4,13 @@ import { products as initialProducts } from '../../data/mockData';
 import ProductCard from '../../components/ProductCard';
 
 const AdminHomeScreen: React.FC = () => {
-  // Em um app real, isso viria de um estado global ou API
   const [products, setProducts] = useState(initialProducts);
 
   const handleEdit = (productId: string) => {
-    // Lógica para navegar para a tela de edição de produto
     Alert.alert('Editar Produto', `Navegar para a tela de edição do produto ${productId}`);
   };
 
   const handleDelete = (productId: string) => {
-    // Filtra o produto a ser deletado da lista
     const updatedProducts = products.filter(p => p.id !== productId);
     setProducts(updatedProducts);
     Alert.alert('Sucesso', 'Produto excluído com sucesso!');

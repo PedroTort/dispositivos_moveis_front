@@ -1,4 +1,3 @@
-// src/components/ProductCard.tsx
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { Product } from '../types';
@@ -108,7 +107,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 4,
     color: '#1F2937',
-    minHeight: 38, // Garante altura consistente para o texto
+    minHeight: 38,
   },
   price: {
     color: '#16A34A',
