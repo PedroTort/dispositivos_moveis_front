@@ -1,10 +1,9 @@
-// src/navigation/UserTabs.tsx
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/user/UserHomeScreen';
-// import CartScreen from '../screens/user/CartScreen';
 import ProfileScreen from '../screens/user/ProfileScreen';
+import CartScreen from '../screens/user/CartScreen';
 
 export type UserTabsParamList = {
   Home: undefined;
@@ -34,11 +33,11 @@ const UserTabs = () => {
         component={HomeScreen} 
         options={{ title: 'Loja' }} 
       />
-      {/* <Tab.Screen 
+      <Tab.Screen 
         name="Cart" 
         component={CartScreen} 
         options={{ title: 'Carrinho' }} 
-      /> */}
+      />
       <Tab.Screen 
         name="Profile" 
         component={ProfileScreen} 

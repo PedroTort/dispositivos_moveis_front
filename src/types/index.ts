@@ -35,7 +35,9 @@ export interface AuthContextType {
 
 export interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product) => void;
+  // Correção: A assinatura agora aceita uma quantidade opcional
+  addToCart: (product: Product, quantity?: number) => void;
+  decreaseCartItem: (productId: string) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
   getTotalPrice: () => number;

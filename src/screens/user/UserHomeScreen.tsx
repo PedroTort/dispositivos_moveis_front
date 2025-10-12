@@ -5,19 +5,20 @@ import {
   FlatList,
   ScrollView,
   TouchableOpacity,
-  StyleSheet
+  StyleSheet,
+  Modal,
+  TextInput,
+  Button,
+  Alert,
 } from 'react-native';
-import { products, categories } from '../../data/mockData';
+import { categories } from '../../data/mockData';
 import ProductCard from '../../components/ProductCard';
 import CategoryButton from '../../components/CategoryButton';
 import { useCart } from '../../contexts/CartContext';
+import { useProducts } from '../../contexts/ProductContext';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-
-type UserTabsParamList = {
-  Home: undefined;
-  Cart: undefined;
-  Profile: undefined;
-};
+import { UserTabsParamList } from '../../navigation/UserTabs';
+import { Product } from '../../types';
 
 type HomeScreenProps = {
   navigation: BottomTabNavigationProp<UserTabsParamList, 'Home'>;
@@ -25,11 +26,41 @@ type HomeScreenProps = {
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const { getTotalItems } = useCart();
+  const { getTotalItems, addToCart } = useCart();
+  const { products } = useProducts();
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [quantity, setQuantity] = useState('1');
 
   const filteredProducts = selectedCategoryId
     ? products.filter(p => p.categoryId === selectedCategoryId)
     : products;
+
+  const openQuantityModal = (product: Product) => {
+    setSelectedProduct(product);
+    setQuantity('1'); // Reseta para 1 toda vez que abre
+    setModalVisible(true);
+  };
+
+  const handleConfirmAddToCart = () => {
+    if (!selectedProduct) return;
+
+    const numQuantity = parseInt(quantity, 10);
+
+    if (isNaN(numQuantity) || numQuantity <= 0) {
+      Alert.alert('Quantidade Inválida', 'Por favor, insira um número maior que zero.');
+      return;
+    }
+    if (numQuantity > selectedProduct.stock) {
+      Alert.alert('Estoque Insuficiente', `Temos apenas ${selectedProduct.stock} unidades disponíveis.`);
+      return;
+    }
+
+    addToCart(selectedProduct, numQuantity);
+    setModalVisible(false);
+    Alert.alert('Sucesso!', `${numQuantity} unidade(s) de ${selectedProduct.name} adicionada(s) ao carrinho.`);
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -91,9 +122,37 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         data={filteredProducts}
         keyExtractor={(item) => item.id}
         numColumns={2}
-        renderItem={({ item }) => <ProductCard product={item} />}
+        renderItem={({ item }) => <ProductCard product={item} onAddToCart={openQuantityModal} />}
         contentContainerStyle={styles.productList}
       />
+
+      {selectedProduct && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Selecione a Quantidade</Text>
+              <Text style={styles.modalProduct}>{selectedProduct.name}</Text>
+              <Text style={styles.modalStock}>Estoque disponível: {selectedProduct.stock}</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="numeric"
+                value={quantity}
+                onChangeText={setQuantity}
+                autoFocus={true}
+              />
+              <View style={styles.modalButtonContainer}>
+                <Button title="Cancelar" onPress={() => setModalVisible(false)} color="#EF4444" />
+                <Button title="Confirmar" onPress={handleConfirmAddToCart} />
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 };
@@ -101,7 +160,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB', // bg-gray-50
+    backgroundColor: '#F9FAFB',
   },
   header: {
     padding: 16,
@@ -110,7 +169,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
-    color: '#1F2937', // text-gray-800
+    color: '#1F2937',
   },
   categoriesScrollView: {
     marginBottom: 16,
@@ -122,16 +181,16 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   categoryButton: {
-    backgroundColor: '#E5E7EB', // bg-gray-200
+    backgroundColor: '#E5E7EB',
   },
   categoryButtonSelected: {
-    backgroundColor: '#3B82F6', // bg-blue-500
+    backgroundColor: '#3B82F6',
   },
   categoryTextBase: {
     fontWeight: '600',
   },
   categoryText: {
-    color: '#374151', // text-gray-700
+    color: '#374151',
   },
   categoryTextSelected: {
     color: 'white',
@@ -150,7 +209,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: '#EF4444', // bg-red-500
+    backgroundColor: '#EF4444',
     borderRadius: 9999,
     width: 20,
     height: 20,
@@ -161,6 +220,54 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  modalProduct: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 5,
+    color: '#4B5563',
+  },
+  modalStock: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 15,
+    color: '#6B7280',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    marginBottom: 20,
+    borderRadius: 5,
+    textAlign: 'center',
+    fontSize: 18,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
   },
 });
 

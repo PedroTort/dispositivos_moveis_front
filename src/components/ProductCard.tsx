@@ -1,33 +1,22 @@
-// src/components/ProductCard.tsx
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { Product } from '../types';
-import { useCart } from '../contexts/CartContext';
 
 interface ProductCardProps {
   product: Product;
   isAdmin?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
+  onAddToCart?: (product: Product) => void;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ 
   product, 
   isAdmin = false, 
   onEdit, 
-  onDelete 
+  onDelete,
+  onAddToCart,
 }) => {
-  const { addToCart } = useCart();
-
-  const handleAddToCart = () => {
-    if (product.stock > 0) {
-      addToCart(product);
-      Alert.alert('Sucesso', 'Produto adicionado ao carrinho!');
-    } else {
-      Alert.alert('Erro', 'Produto fora de estoque!');
-    }
-  };
-  
   const handleDelete = () => {
     Alert.alert(
       'Confirmar exclusão',
@@ -38,7 +27,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
       ]
     );
   };
-
 
   return (
     <View style={styles.card}>
@@ -71,7 +59,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       ) : (
         <TouchableOpacity 
           style={[styles.button, product.stock === 0 && styles.buttonDisabled]}
-          onPress={handleAddToCart}
+          onPress={() => onAddToCart && onAddToCart(product)}
           disabled={product.stock === 0}
         >
           <Text style={styles.buttonText}>
@@ -108,7 +96,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 4,
     color: '#1F2937',
-    minHeight: 38, // Garante altura consistente para o texto
+    minHeight: 38,
   },
   price: {
     color: '#16A34A',
@@ -121,7 +109,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 12,
   },
-  // Estilos para o botão do usuário
   button: {
     backgroundColor: '#22C55E',
     paddingVertical: 10,
@@ -135,7 +122,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
-  // Estilos para os botões do admin
   adminButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -147,11 +133,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   editButton: {
-    backgroundColor: '#3B82F6', // Azul
+    backgroundColor: '#3B82F6',
     marginRight: 4,
   },
   deleteButton: {
-    backgroundColor: '#EF4444', // Vermelho
+    backgroundColor: '#EF4444',
     marginLeft: 4,
   },
   adminButtonText: {

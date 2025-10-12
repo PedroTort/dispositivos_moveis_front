@@ -1,4 +1,3 @@
-// src/contexts/CartContext.tsx
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Product, CartItem, CartContextType } from '../types';
 
@@ -19,19 +18,35 @@ interface CartProviderProps {
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, quantityToAdd: number = 1) => {
     setItems(currentItems => {
       const existingItem = currentItems.find(item => item.product.id === product.id);
       
       if (existingItem) {
         return currentItems.map(item =>
           item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + quantityToAdd }
             : item
         );
       }
       
-      return [...currentItems, { product, quantity: 1 }];
+      return [...currentItems, { product, quantity: quantityToAdd }];
+    });
+  };
+
+  const decreaseCartItem = (productId: string) => {
+    setItems(currentItems => {
+      const existingItem = currentItems.find(item => item.product.id === productId);
+
+      if (existingItem?.quantity === 1) {
+        return currentItems.filter(item => item.product.id !== productId);
+      }
+
+      return currentItems.map(item =>
+        item.product.id === productId
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
+      );
     });
   };
 
@@ -59,6 +74,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     <CartContext.Provider value={{
       items,
       addToCart,
+      decreaseCartItem,
       removeFromCart,
       clearCart,
       getTotalPrice,
