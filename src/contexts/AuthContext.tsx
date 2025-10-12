@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { User, AuthContextType } from '../types';
-import { users } from '../data/mockData';
+import * as api from '../services/api';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -18,44 +18,48 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const login = (email: string, password: string): boolean => {
-    const foundUser = users.find(
-      u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-    
-    if (foundUser) {
-      setUser(foundUser);
-      return true;
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const response = await api.loginUser({ email, password });
+      setUser(response.user);
+      setToken(response.access_token);
+    } catch (error) {
+      console.error("Falha no login:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
-    return false;
   };
 
   const logout = () => {
     setUser(null);
+    setToken(null);
   };
 
-  const register = (name: string, email: string, password: string): boolean => {
-    const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (existingUser) {
-      return false;
+  const register = async (name: string, email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      // 1. Chama a API para criar o novo usuário no banco de dados.
+      const newUser = await api.registerUser({ name, email, password });
+      
+      // 2. Se o registro foi bem-sucedido, faz o login para obter o token e atualizar o estado.
+      if (newUser) {
+        await login(email, password);
+      }
+    } catch (error) {
+      console.error("Falha no registro:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
-
-    const newUser: User = {
-      id: Date.now().toString(),
-      name,
-      email,
-      password,
-      role: 'user'
-    };
-
-    users.push(newUser);
-    setUser(newUser);
-    return true;
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );

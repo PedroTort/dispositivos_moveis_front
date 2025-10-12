@@ -10,13 +10,16 @@ import {
   TextInput,
   Button,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { products as initialProducts } from '../../data/mockData';
 import ProductCard from '../../components/ProductCard';
-import { Product } from '../../types';
+import { Product, UpdateProductPayload } from '../../types';
 import { AdminStackParamList } from '../../navigation/AdminStack';
+import { useProducts } from '../../contexts/ProductContext';
+import { useAuth } from '../../contexts/AuthContext';
+import * as api from '../../services/api';
 
 type AdminHomeScreenNavigationProp = NativeStackNavigationProp<
   AdminStackParamList,
@@ -24,45 +27,85 @@ type AdminHomeScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const AdminHomeScreen = () => {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const { products, isLoading, fetchProducts } = useProducts();
+  const { token } = useAuth();
   const [isModalVisible, setModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [quantity, setQuantity] = useState('');
+  const [stock, setStock] = useState('');
   const navigation = useNavigation<AdminHomeScreenNavigationProp>();
 
-  const handleDeleteProduct = (productId: string) => {
-    setProducts(prevProducts =>
-      prevProducts.filter(product => product.id !== productId)
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchProducts();
+    }, [])
+  );
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!token) {
+      Alert.alert('Erro', 'Autenticação necessária.');
+      return;
+    }
+    Alert.alert(
+      'Confirmar Exclusão',
+      'Tem certeza que deseja excluir este produto permanentemente?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.deleteProduct(productId, token);
+              Alert.alert('Sucesso', 'Produto excluído!');
+              await fetchProducts(); // Recarrega a lista
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro desconhecido.';
+              Alert.alert('Erro', `Não foi possível excluir o produto: ${errorMessage}`);
+            }
+          },
+        },
+      ]
     );
-    Alert.alert('Sucesso', 'Produto excluído com sucesso!');
   };
 
   const openEditModal = (product: Product) => {
     setSelectedProduct(product);
-    setQuantity(product.stock.toString());
+    setStock(product.stock.toString());
     setModalVisible(true);
   };
 
-  const handleUpdateQuantity = () => {
-    if (selectedProduct && quantity !== '') {
-      const newQuantity = parseInt(quantity, 10);
-      if (!isNaN(newQuantity)) {
-        setProducts(prevProducts =>
-          prevProducts.map(p =>
-            p.id === selectedProduct.id ? { ...p, stock: newQuantity } : p
-          )
-        );
-        setModalVisible(false);
-        Alert.alert('Sucesso', 'Quantidade atualizada com sucesso!');
-      } else {
-        Alert.alert('Erro', 'Por favor, insira um número válido.');
-      }
+  const handleUpdateStock = async () => {
+    if (!selectedProduct || !token) {
+      Alert.alert('Erro', 'Produto ou autenticação inválidos.');
+      return;
+    }
+    const newStock = parseInt(stock, 10);
+    if (isNaN(newStock) || newStock < 0) {
+      Alert.alert('Erro', 'Por favor, insira um número de estoque válido.');
+      return;
+    }
+
+    const payload: UpdateProductPayload = { stock: newStock };
+
+    try {
+      await api.updateProduct(selectedProduct.id.toString(), payload, token);
+      setModalVisible(false);
+      Alert.alert('Sucesso', 'Estoque atualizado!');
+      await fetchProducts(); // Recarrega a lista
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro desconhecido.';
+      Alert.alert('Erro', `Não foi possível atualizar o estoque: ${errorMessage}`);
     }
   };
 
-  const handleAddProduct = (newProduct: Product) => {
-    setProducts(prevProducts => [...prevProducts, newProduct]);
-  };
+  if (isLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#3B82F6" />
+        <Text style={styles.loadingText}>Carregando produtos...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -70,7 +113,7 @@ const AdminHomeScreen = () => {
         <Text style={styles.headerTitle}>Gerenciar Produtos</Text>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => navigation.navigate('AddProduct', { addProduct: handleAddProduct })}
+          onPress={() => navigation.navigate('AddProduct', { addProduct: () => fetchProducts() })}
         >
           <Text style={styles.addButtonText}>Adicionar Novo Produto</Text>
         </TouchableOpacity>
@@ -82,10 +125,10 @@ const AdminHomeScreen = () => {
             product={item}
             isAdmin={true}
             onEdit={() => openEditModal(item)}
-            onDelete={() => handleDeleteProduct(item.id)}
+            onDelete={() => handleDeleteProduct(item.id.toString())}
           />
         )}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id.toString()}
         numColumns={2}
         contentContainerStyle={styles.productList}
       />
@@ -99,18 +142,11 @@ const AdminHomeScreen = () => {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>
-                Editar Quantidade de {selectedProduct.name}
-              </Text>
-              <TextInput
-                style={styles.input}
-                keyboardType="numeric"
-                value={quantity}
-                onChangeText={setQuantity}
-              />
+              <Text style={styles.modalTitle}>Editar Estoque de {selectedProduct.name}</Text>
+              <TextInput style={styles.input} keyboardType="numeric" value={stock} onChangeText={setStock} />
               <View style={styles.modalButtonContainer}>
                 <Button title="Cancelar" onPress={() => setModalVisible(false)} />
-                <Button title="Salvar" onPress={handleUpdateQuantity} />
+                <Button title="Salvar" onPress={handleUpdateStock} />
               </View>
             </View>
           </View>
@@ -121,63 +157,74 @@ const AdminHomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F9FAFB',
-    },
-    header: {
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#1F2937',
-        marginBottom: 16,
-    },
-    addButton: {
-        backgroundColor: '#22C55E',
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    addButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    productList: {
-        paddingHorizontal: 8,
-    },
-    modalContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    modalContent: {
-        width: '80%',
-        backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 10,
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#ccc',
-        padding: 10,
-        marginBottom: 20,
-        borderRadius: 5,
-    },
-    modalButtonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-    },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  header: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 16,
+  },
+  addButton: {
+    backgroundColor: '#22C55E',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  productList: {
+    paddingHorizontal: 8,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    marginBottom: 20,
+    borderRadius: 5,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
 });
 
 export default AdminHomeScreen;

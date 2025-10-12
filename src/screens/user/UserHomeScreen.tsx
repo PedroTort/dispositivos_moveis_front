@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect } from 'react';
+import React, { useState, useLayoutEffect, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,53 +10,60 @@ import {
   TextInput,
   Button,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { categories } from '../../data/mockData';
-import ProductCard from '../../components/ProductCard';
 import CategoryButton from '../../components/CategoryButton';
+import ProductCard from '../../components/ProductCard';
 import { useCart } from '../../contexts/CartContext';
 import { useProducts } from '../../contexts/ProductContext';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { UserTabsParamList } from '../../navigation/UserTabs';
-import { Product } from '../../types';
+import { Product, Category } from '../../types';
+import * as api from '../../services/api';
 
 type HomeScreenProps = {
   navigation: BottomTabNavigationProp<UserTabsParamList, 'Home'>;
 };
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   const { getTotalItems, addToCart } = useCart();
-  const { products } = useProducts();
+  const { products, isLoading: isLoadingProducts } = useProducts();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState('1');
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const fetchedCategories = await api.getCategories();
+        setCategories(fetchedCategories);
+      } catch (error) {
+        Alert.alert("Erro", "Não foi possível carregar as categorias.");
+      }
+    };
+    fetchCategories();
+  }, []);
+
   const filteredProducts = selectedCategoryId
-    ? products.filter(p => p.categoryId === selectedCategoryId)
+    ? products.filter(p => p.category_id === selectedCategoryId)
     : products;
 
   const openQuantityModal = (product: Product) => {
     setSelectedProduct(product);
-    setQuantity('1'); // Reseta para 1 toda vez que abre
+    setQuantity('1');
     setModalVisible(true);
   };
 
   const handleConfirmAddToCart = () => {
     if (!selectedProduct) return;
-
     const numQuantity = parseInt(quantity, 10);
-
-    if (isNaN(numQuantity) || numQuantity <= 0) {
-      Alert.alert('Quantidade Inválida', 'Por favor, insira um número maior que zero.');
+    if (isNaN(numQuantity) || numQuantity <= 0 || numQuantity > selectedProduct.stock) {
+      Alert.alert('Quantidade Inválida', `Por favor, insira uma quantidade válida (1 a ${selectedProduct.stock}).`);
       return;
     }
-    if (numQuantity > selectedProduct.stock) {
-      Alert.alert('Estoque Insuficiente', `Temos apenas ${selectedProduct.stock} unidades disponíveis.`);
-      return;
-    }
-
     addToCart(selectedProduct, numQuantity);
     setModalVisible(false);
     Alert.alert('Sucesso!', `${numQuantity} unidade(s) de ${selectedProduct.name} adicionada(s) ao carrinho.`);
@@ -65,48 +72,36 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity
-          style={styles.cartIconContainer}
-          onPress={() => navigation.navigate('Cart')}
-        >
+        <TouchableOpacity style={styles.cartIconContainer} onPress={() => navigation.navigate('Cart')}>
           <Text style={styles.cartIconText}>🛒</Text>
           {getTotalItems() > 0 && (
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>
-                {getTotalItems()}
-              </Text>
-            </View>
+            <View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{getTotalItems()}</Text></View>
           )}
         </TouchableOpacity>
       ),
     });
   }, [navigation, getTotalItems]);
 
+  if (isLoadingProducts) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#3B82F6" />
+        <Text style={styles.loadingText}>Carregando produtos...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Nossa Loja</Text>
-        
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoriesScrollView}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScrollView}>
           <TouchableOpacity
-            style={[
-              styles.categoryButtonBase,
-              selectedCategoryId === null ? styles.categoryButtonSelected : styles.categoryButton,
-            ]}
+            style={[styles.categoryButtonBase, selectedCategoryId === null ? styles.categoryButtonSelected : styles.categoryButton]}
             onPress={() => setSelectedCategoryId(null)}
           >
-            <Text style={[
-              styles.categoryTextBase,
-              selectedCategoryId === null ? styles.categoryTextSelected : styles.categoryText,
-            ]}>
-              Todos
-            </Text>
+            <Text style={[styles.categoryTextBase, selectedCategoryId === null ? styles.categoryTextSelected : styles.categoryText]}>Todos</Text>
           </TouchableOpacity>
-          
           {categories.map(category => (
             <CategoryButton
               key={category.id}
@@ -117,34 +112,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           ))}
         </ScrollView>
       </View>
-
       <FlatList
         data={filteredProducts}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         numColumns={2}
         renderItem={({ item }) => <ProductCard product={item} onAddToCart={openQuantityModal} />}
         contentContainerStyle={styles.productList}
       />
-
       {selectedProduct && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
+        <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Selecione a Quantidade</Text>
               <Text style={styles.modalProduct}>{selectedProduct.name}</Text>
-              <Text style={styles.modalStock}>Estoque disponível: {selectedProduct.stock}</Text>
-              <TextInput
-                style={styles.input}
-                keyboardType="numeric"
-                value={quantity}
-                onChangeText={setQuantity}
-                autoFocus={true}
-              />
+              <Text style={styles.modalStock}>Estoque: {selectedProduct.stock}</Text>
+              <TextInput style={styles.input} keyboardType="numeric" value={quantity} onChangeText={setQuantity} autoFocus={true} />
               <View style={styles.modalButtonContainer}>
                 <Button title="Cancelar" onPress={() => setModalVisible(false)} color="#EF4444" />
                 <Button title="Confirmar" onPress={handleConfirmAddToCart} />
@@ -158,12 +140,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#6B7280',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
   header: {
     padding: 16,
+    paddingBottom: 0,
   },
   headerTitle: {
     fontSize: 24,
@@ -172,7 +166,7 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   categoriesScrollView: {
-    marginBottom: 16,
+    paddingBottom: 16,
   },
   categoryButtonBase: {
     paddingHorizontal: 16,

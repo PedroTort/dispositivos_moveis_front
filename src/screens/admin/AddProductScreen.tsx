@@ -7,109 +7,99 @@ import {
   Alert,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
   Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Picker } from '@react-native-picker/picker';
 import { AdminStackParamList } from '../../navigation/AdminStack';
-import { Product } from '../../types';
-import { categories } from '../../data/mockData'; // Importamos as categorias
+import { Category, NewProductPayload } from '../../types';
+import { useAuth } from '../../contexts/AuthContext';
+import * as api from '../../services/api';
 
 type Props = NativeStackScreenProps<AdminStackParamList, 'AddProduct'>;
 
 const AddProductScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { addProduct } = route.params;
+  const { addProduct: refreshProductList } = route.params;
+  const { token } = useAuth();
+
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [stock, setStock] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [categoryId, setCategoryId] = useState<string>('');
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Define a primeira categoria como padrão ao carregar a tela
   useEffect(() => {
-    if (categories.length > 0) {
-      setCategoryId(categories[0].id);
-    }
+    const fetchCategories = async () => {
+      try {
+        const fetchedCategories = await api.getCategories();
+        setCategories(fetchedCategories);
+        if (fetchedCategories.length > 0) {
+          setCategoryId(fetchedCategories[0].id);
+        }
+      } catch (error) {
+        Alert.alert("Erro", "Não foi possível carregar as categorias.");
+      }
+    };
+    fetchCategories();
   }, []);
 
-  const handleSaveProduct = () => {
+  const handleSaveProduct = async () => {
+    if (!token) {
+      Alert.alert('Erro', 'Autenticação necessária.');
+      return;
+    }
     if (!name || !price || !stock || !categoryId || !description) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
-    const priceNumber = parseFloat(price.replace(',', '.')); // Aceita vírgula e ponto
-    const stockNumber = parseInt(stock, 10);
-
-    if (isNaN(priceNumber) || priceNumber <= 0 || isNaN(stockNumber) || stockNumber < 0) {
-      Alert.alert('Erro', 'Preço e estoque devem ser números válidos.');
-      return;
-    }
-
-    const newProduct: Product = {
-      id: Date.now().toString(),
+    setIsLoading(true);
+    const payload: NewProductPayload = {
       name,
-      price: priceNumber,
+      price: parseFloat(price.replace(',', '.')),
       description,
-      stock: stockNumber,
-      imageUrl: imageUrl || 'https://via.placeholder.com/200', // Placeholder
-      categoryId,
+      stock: parseInt(stock, 10),
+      imageUrl: imageUrl || 'https://via.placeholder.com/200',
+      category_id: categoryId,
     };
 
-    addProduct(newProduct);
-    Alert.alert('Sucesso', 'Produto adicionado com sucesso!');
-    navigation.goBack();
+    try {
+      const newProduct = await api.addProduct(payload, token);
+      Alert.alert('Sucesso', 'Produto adicionado com sucesso!');
+      refreshProductList(newProduct);
+      navigation.goBack();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro.';
+      Alert.alert('Erro', `Não foi possível adicionar o produto: ${errorMessage}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.form}>
         <Text style={styles.label}>Nome do Produto</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="Ex: Camiseta Básica"
-        />
+        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Ex: Fone de Ouvido TWS" />
 
         <Text style={styles.label}>Descrição</Text>
-        <TextInput
-          style={styles.input}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Ex: 100% algodão, confortável"
-          multiline
-        />
+        <TextInput style={styles.input} value={description} onChangeText={setDescription} multiline placeholder="Ex: Bateria de longa duração..." />
 
         <Text style={styles.label}>Preço</Text>
-        <TextInput
-          style={styles.input}
-          value={price}
-          onChangeText={setPrice}
-          placeholder="Ex: 39,99"
-          keyboardType="numeric"
-        />
+        <TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="Ex: 199.90" />
 
         <Text style={styles.label}>Quantidade em Estoque</Text>
-        <TextInput
-          style={styles.input}
-          value={stock}
-          onChangeText={setStock}
-          placeholder="Ex: 50"
-          keyboardType="numeric"
-        />
+        <TextInput style={styles.input} value={stock} onChangeText={setStock} keyboardType="numeric" placeholder="Ex: 25" />
 
-        <Text style={styles.label}>URL da Imagem (Opcional)</Text>
-        <TextInput
-          style={styles.input}
-          value={imageUrl}
-          onChangeText={setImageUrl}
-          placeholder="https://exemplo.com/imagem.jpg"
-        />
+        <Text style={styles.label}>URL da Imagem</Text>
+        <TextInput style={styles.input} value={imageUrl} onChangeText={setImageUrl} placeholder="https://exemplo.com/imagem.jpg" />
 
         <Text style={styles.label}>Categoria</Text>
-        {/* Container para o Picker ter a mesma aparência dos inputs no Android */}
         <View style={styles.pickerContainer}>
           <Picker
             selectedValue={categoryId}
@@ -122,8 +112,12 @@ const AddProductScreen: React.FC<Props> = ({ route, navigation }) => {
           </Picker>
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSaveProduct}>
-          <Text style={styles.saveButtonText}>Salvar Produto</Text>
+        <TouchableOpacity style={[styles.saveButton, isLoading && styles.buttonDisabled]} onPress={handleSaveProduct} disabled={isLoading}>
+          {isLoading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.saveButtonText}>Salvar Produto</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -160,9 +154,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 16,
     backgroundColor: 'white',
+    justifyContent: 'center',
   },
   picker: {
     color: '#1F2937',
+    height: Platform.OS === 'ios' ? undefined : 50,
   },
   saveButton: {
     backgroundColor: '#3B82F6',
@@ -170,6 +166,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
+    height: 50,
+    justifyContent: 'center',
+  },
+  buttonDisabled: {
+    backgroundColor: '#9CA3AF',
   },
   saveButtonText: {
     color: 'white',

@@ -7,7 +7,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  StyleSheet
+  StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -25,9 +26,9 @@ const CreateAccountScreen: React.FC<CreateAccountScreenProps> = ({ navigation })
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { register } = useAuth();
+  const { register, isLoading } = useAuth();
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name || !email || !password) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos');
       return;
@@ -38,11 +39,13 @@ const CreateAccountScreen: React.FC<CreateAccountScreenProps> = ({ navigation })
       return;
     }
 
-    const success = register(name, email, password);
-    if (!success) {
-      Alert.alert('Erro', 'Este email já está em uso');
-    } else {
-      Alert.alert('Sucesso', 'Conta criada com sucesso!');
+    try {
+      await register(name, email, password);
+      // Se o registro e login forem bem-sucedidos, o AppNavigator mudará de tela automaticamente.
+      // Um alerta de sucesso aqui pode não ser visto pelo usuário, pois a tela mudará.
+    } catch (error) {
+      // Exibe um erro genérico que cobre o caso de e-mail já existente.
+      Alert.alert('Erro no Registro', 'Não foi possível criar a conta. Verifique se o e-mail já está em uso e tente novamente.');
     }
   };
 
@@ -60,6 +63,7 @@ const CreateAccountScreen: React.FC<CreateAccountScreenProps> = ({ navigation })
             placeholder="Nome completo"
             value={name}
             onChangeText={setName}
+            editable={!isLoading}
           />
           
           <TextInput
@@ -69,6 +73,7 @@ const CreateAccountScreen: React.FC<CreateAccountScreenProps> = ({ navigation })
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            editable={!isLoading}
           />
           
           <TextInput
@@ -77,18 +82,25 @@ const CreateAccountScreen: React.FC<CreateAccountScreenProps> = ({ navigation })
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            editable={!isLoading}
           />
           
           <TouchableOpacity
-            style={styles.registerButton}
+            style={[styles.registerButton, isLoading && styles.buttonDisabled]}
             onPress={handleRegister}
+            disabled={isLoading}
           >
-            <Text style={styles.buttonText}>Registrar</Text>
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Registrar</Text>
+            )}
           </TouchableOpacity>
           
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
+            disabled={isLoading}
           >
             <Text style={styles.backButtonText}>Já tenho uma conta</Text>
           </TouchableOpacity>
@@ -101,7 +113,7 @@ const CreateAccountScreen: React.FC<CreateAccountScreenProps> = ({ navigation })
 const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
-    backgroundColor: '#F9FAFB', // bg-gray-50
+    backgroundColor: '#F9FAFB',
   },
   container: {
     flex: 1,
@@ -123,22 +135,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 32,
-    color: '#1F2937', // text-gray-800
+    color: '#1F2937',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#D1D5DB', // border-gray-300
+    borderColor: '#D1D5DB',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 16,
-    color: '#374151', // text-gray-700
+    color: '#374151',
   },
   registerButton: {
-    backgroundColor: '#22C55E', // bg-green-500
+    backgroundColor: '#22C55E',
     borderRadius: 8,
     paddingVertical: 12,
     marginBottom: 16,
+    height: 48,
+    justifyContent: 'center',
+  },
+  buttonDisabled: {
+    backgroundColor: '#9CA3AF',
   },
   buttonText: {
     color: 'white',
@@ -150,7 +167,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   backButtonText: {
-    color: '#3B82F6', // text-blue-500
+    color: '#3B82F6',
     textAlign: 'center',
   },
 });
