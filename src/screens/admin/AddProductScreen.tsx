@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,13 @@ import {
   Alert,
   StyleSheet,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Picker } from '@react-native-picker/picker';
 import { AdminStackParamList } from '../../navigation/AdminStack';
 import { Product } from '../../types';
+import { categories } from '../../data/mockData'; // Importamos as categorias
 
 type Props = NativeStackScreenProps<AdminStackParamList, 'AddProduct'>;
 
@@ -21,7 +24,14 @@ const AddProductScreen: React.FC<Props> = ({ route, navigation }) => {
   const [description, setDescription] = useState('');
   const [stock, setStock] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [categoryId, setCategoryId] = useState('');
+  const [categoryId, setCategoryId] = useState<string>('');
+
+  // Define a primeira categoria como padrão ao carregar a tela
+  useEffect(() => {
+    if (categories.length > 0) {
+      setCategoryId(categories[0].id);
+    }
+  }, []);
 
   const handleSaveProduct = () => {
     if (!name || !price || !stock || !categoryId || !description) {
@@ -29,11 +39,11 @@ const AddProductScreen: React.FC<Props> = ({ route, navigation }) => {
       return;
     }
 
-    const priceNumber = parseFloat(price);
+    const priceNumber = parseFloat(price.replace(',', '.')); // Aceita vírgula e ponto
     const stockNumber = parseInt(stock, 10);
 
-    if (isNaN(priceNumber) || isNaN(stockNumber)) {
-      Alert.alert('Erro', 'Preço e quantidade em estoque devem ser números.');
+    if (isNaN(priceNumber) || priceNumber <= 0 || isNaN(stockNumber) || stockNumber < 0) {
+      Alert.alert('Erro', 'Preço e estoque devem ser números válidos.');
       return;
     }
 
@@ -43,7 +53,7 @@ const AddProductScreen: React.FC<Props> = ({ route, navigation }) => {
       price: priceNumber,
       description,
       stock: stockNumber,
-      imageUrl: imageUrl || 'https://via.placeholder.com/200', // Placeholder se a URL estiver vazia
+      imageUrl: imageUrl || 'https://via.placeholder.com/200', // Placeholder
       categoryId,
     };
 
@@ -77,7 +87,7 @@ const AddProductScreen: React.FC<Props> = ({ route, navigation }) => {
           style={styles.input}
           value={price}
           onChangeText={setPrice}
-          placeholder="Ex: 39.99"
+          placeholder="Ex: 39,99"
           keyboardType="numeric"
         />
 
@@ -98,13 +108,19 @@ const AddProductScreen: React.FC<Props> = ({ route, navigation }) => {
           placeholder="https://exemplo.com/imagem.jpg"
         />
 
-        <Text style={styles.label}>ID da Categoria</Text>
-        <TextInput
-          style={styles.input}
-          value={categoryId}
-          onChangeText={setCategoryId}
-          placeholder="Ex: 1 para Eletrônicos, 2 para Roupas"
-        />
+        <Text style={styles.label}>Categoria</Text>
+        {/* Container para o Picker ter a mesma aparência dos inputs no Android */}
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={categoryId}
+            onValueChange={(itemValue) => setCategoryId(itemValue)}
+            style={styles.picker}
+          >
+            {categories.map((category) => (
+              <Picker.Item key={category.id} label={category.name} value={category.id} />
+            ))}
+          </Picker>
+        </View>
 
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveProduct}>
           <Text style={styles.saveButtonText}>Salvar Produto</Text>
@@ -136,6 +152,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 16,
+    color: '#1F2937',
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    marginBottom: 16,
+    backgroundColor: 'white',
+  },
+  picker: {
     color: '#1F2937',
   },
   saveButton: {

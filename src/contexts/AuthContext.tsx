@@ -32,13 +32,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    setUser(null);  // limpa o usuario logado
+    setUser(null);
   };
 
   const register = (name: string, email: string, password: string): boolean => {
     const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (existingUser) {
-      return false; // email ja cadastrado
+      return false;
     }
 
     const newUser: User = {
@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       role: 'user'
     };
 
-    users.push(newUser); // adiciona novo usuario no db
+    users.push(newUser);
     setUser(newUser);
     return true;
   };

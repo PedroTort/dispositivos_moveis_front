@@ -1,4 +1,3 @@
-// src/data/mockData.ts
 import { Category, Product, User } from '../types';
 
 export const categories: Category[] = [
