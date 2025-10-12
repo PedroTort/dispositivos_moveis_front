@@ -2,13 +2,15 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AdminHomeScreen from '../screens/admin/AdminHomeScreen';
 import AddProductScreen from '../screens/admin/AddProductScreen';
+import AddCategoryScreen from '../screens/admin/AddCategoryScreen';
+import EditProductScreen from '../screens/admin/EditProductScreen';
 import { Product } from '../types';
 
 export type AdminStackParamList = {
   AdminHome: undefined;
-  AddProduct: {
-    addProduct: (newProduct: Product) => void;
-  };
+  AddProduct: { onGoBack: () => void }; // Renomeado para consistência
+  AddCategory: { onGoBack: () => void }; // Adicionado callback
+  EditProduct: { product: Product; onGoBack: () => void }; // Adicionado callback
 };
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
@@ -16,16 +18,10 @@ const Stack = createNativeStackNavigator<AdminStackParamList>();
 const AdminStack = () => {
   return (
     <Stack.Navigator>
-      <Stack.Screen
-        name="AdminHome"
-        component={AdminHomeScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="AddProduct"
-        component={AddProductScreen}
-        options={{ title: 'Adicionar Novo Produto' }}
-      />
+      <Stack.Screen name="AdminHome" component={AdminHomeScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="AddProduct" component={AddProductScreen} options={{ title: 'Adicionar Novo Produto' }} />
+      <Stack.Screen name="AddCategory" component={AddCategoryScreen} options={{ title: 'Adicionar Nova Categoria' }} />
+      <Stack.Screen name="EditProduct" component={EditProductScreen} options={{ title: 'Editar Produto' }} />
     </Stack.Navigator>
   );
 };

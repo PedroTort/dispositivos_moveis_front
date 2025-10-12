@@ -20,7 +20,8 @@ import * as api from '../../services/api';
 type Props = NativeStackScreenProps<AdminStackParamList, 'AddProduct'>;
 
 const AddProductScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { addProduct: refreshProductList } = route.params;
+  // CORREÇÃO AQUI: Recebendo 'onGoBack' dos parâmetros da rota
+  const { onGoBack } = route.params;
   const { token } = useAuth();
 
   const [name, setName] = useState('');
@@ -69,9 +70,9 @@ const AddProductScreen: React.FC<Props> = ({ route, navigation }) => {
     };
 
     try {
-      const newProduct = await api.addProduct(payload, token);
+      await api.addProduct(payload, token);
       Alert.alert('Sucesso', 'Produto adicionado com sucesso!');
-      refreshProductList(newProduct);
+      onGoBack(); // Chama a função para atualizar a tela anterior
       navigation.goBack();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro.';
@@ -125,58 +126,15 @@ const AddProductScreen: React.FC<Props> = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  form: {
-    padding: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: '#374151',
-  },
-  input: {
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
-    color: '#1F2937',
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    marginBottom: 16,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-  },
-  picker: {
-    color: '#1F2937',
-    height: Platform.OS === 'ios' ? undefined : 50,
-  },
-  saveButton: {
-    backgroundColor: '#3B82F6',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-    height: 50,
-    justifyContent: 'center',
-  },
-  buttonDisabled: {
-    backgroundColor: '#9CA3AF',
-  },
-  saveButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  form: { padding: 20 },
+  label: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#374151' },
+  input: { backgroundColor: 'white', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16, color: '#1F2937' },
+  pickerContainer: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, marginBottom: 16, backgroundColor: 'white', justifyContent: 'center' },
+  picker: { color: '#1F2937', height: Platform.OS === 'ios' ? undefined : 50 },
+  saveButton: { backgroundColor: '#3B82F6', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 16, height: 50, justifyContent: 'center' },
+  buttonDisabled: { backgroundColor: '#9CA3AF' },
+  saveButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
 });
 
 export default AddProductScreen;

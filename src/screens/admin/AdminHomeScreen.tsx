@@ -7,7 +7,6 @@ import {
   Alert,
   TouchableOpacity,
   Modal,
-  TextInput,
   Button,
   SafeAreaView,
   ActivityIndicator,
@@ -15,7 +14,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import ProductCard from '../../components/ProductCard';
-import { Product, UpdateProductPayload } from '../../types';
+import { Product, Category } from '../../types';
 import { AdminStackParamList } from '../../navigation/AdminStack';
 import { useProducts } from '../../contexts/ProductContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,15 +28,25 @@ type AdminHomeScreenNavigationProp = NativeStackNavigationProp<
 const AdminHomeScreen = () => {
   const { products, isLoading, fetchProducts } = useProducts();
   const { token } = useAuth();
-  const [isModalVisible, setModalVisible] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [stock, setStock] = useState('');
   const navigation = useNavigation<AdminHomeScreenNavigationProp>();
+
+  const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  const fetchAllData = async () => {
+    fetchProducts();
+    try {
+      const fetchedCategories = await api.getCategories();
+      setCategories(fetchedCategories);
+    } catch (error) {
+      console.error('Erro ao buscar categorias');
+    }
+  };
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchProducts();
-    }, [])
+      fetchAllData();
+    }, []),
   );
 
   const handleDeleteProduct = async (productId: string) => {
@@ -45,9 +54,37 @@ const AdminHomeScreen = () => {
       Alert.alert('Erro', 'Autenticação necessária.');
       return;
     }
+    Alert.alert('Confirmar Exclusão', 'Deseja excluir este produto?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Excluir',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.deleteProduct(productId, token);
+            Alert.alert('Sucesso', 'Produto excluído!');
+            await fetchAllData();
+          } catch (error) {
+            Alert.alert(
+              'Erro',
+              `Não foi possível excluir o produto: ${
+                error instanceof Error ? error.message : 'Erro desconhecido'
+              }`,
+            );
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleDeleteCategory = async (categoryId: number) => {
+    if (!token) {
+      Alert.alert('Erro', 'Autenticação necessária.');
+      return;
+    }
     Alert.alert(
       'Confirmar Exclusão',
-      'Tem certeza que deseja excluir este produto permanentemente?',
+      'Deseja excluir esta categoria? Apenas categorias sem produtos podem ser excluídas.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -55,54 +92,28 @@ const AdminHomeScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await api.deleteProduct(productId, token);
-              Alert.alert('Sucesso', 'Produto excluído!');
-              await fetchProducts(); // Recarrega a lista
+              await api.deleteCategory(categoryId, token);
+              Alert.alert('Sucesso', 'Categoria excluída!');
+              await fetchAllData();
             } catch (error) {
-              const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro desconhecido.';
-              Alert.alert('Erro', `Não foi possível excluir o produto: ${errorMessage}`);
+              Alert.alert(
+                'Erro',
+                `Não foi possível excluir a categoria: ${
+                  error instanceof Error ? error.message : 'Erro desconhecido'
+                }`,
+              );
             }
           },
         },
-      ]
+      ],
     );
-  };
-
-  const openEditModal = (product: Product) => {
-    setSelectedProduct(product);
-    setStock(product.stock.toString());
-    setModalVisible(true);
-  };
-
-  const handleUpdateStock = async () => {
-    if (!selectedProduct || !token) {
-      Alert.alert('Erro', 'Produto ou autenticação inválidos.');
-      return;
-    }
-    const newStock = parseInt(stock, 10);
-    if (isNaN(newStock) || newStock < 0) {
-      Alert.alert('Erro', 'Por favor, insira um número de estoque válido.');
-      return;
-    }
-
-    const payload: UpdateProductPayload = { stock: newStock };
-
-    try {
-      await api.updateProduct(selectedProduct.id.toString(), payload, token);
-      setModalVisible(false);
-      Alert.alert('Sucesso', 'Estoque atualizado!');
-      await fetchProducts(); // Recarrega a lista
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro desconhecido.';
-      Alert.alert('Erro', `Não foi possível atualizar o estoque: ${errorMessage}`);
-    }
   };
 
   if (isLoading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#3B82F6" />
-        <Text style={styles.loadingText}>Carregando produtos...</Text>
+        <Text style={styles.loadingText}>Carregando...</Text>
       </View>
     );
   }
@@ -110,12 +121,21 @@ const AdminHomeScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Gerenciar Produtos</Text>
+        <Text style={styles.headerTitle}>Gerenciar</Text>
         <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('AddProduct', { addProduct: () => fetchProducts() })}
+          style={styles.button}
+          // CORREÇÃO AQUI: 'addProduct' foi renomeado para 'onGoBack'
+          onPress={() =>
+            navigation.navigate('AddProduct', { onGoBack: fetchAllData })
+          }
         >
-          <Text style={styles.addButtonText}>Adicionar Novo Produto</Text>
+          <Text style={styles.buttonText}>Adicionar Novo Produto</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, styles.manageCategoryButton]}
+          onPress={() => setCategoryModalVisible(true)}
+        >
+          <Text style={styles.buttonText}>Gerenciar Categorias</Text>
         </TouchableOpacity>
       </View>
       <FlatList
@@ -124,34 +144,61 @@ const AdminHomeScreen = () => {
           <ProductCard
             product={item}
             isAdmin={true}
-            onEdit={() => openEditModal(item)}
+            onEdit={() =>
+              navigation.navigate('EditProduct', {
+                product: item,
+                onGoBack: fetchAllData,
+              })
+            }
             onDelete={() => handleDeleteProduct(item.id.toString())}
           />
         )}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={item => item.id.toString()}
         numColumns={2}
         contentContainerStyle={styles.productList}
       />
-
-      {selectedProduct && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={isModalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Editar Estoque de {selectedProduct.name}</Text>
-              <TextInput style={styles.input} keyboardType="numeric" value={stock} onChangeText={setStock} />
-              <View style={styles.modalButtonContainer}>
-                <Button title="Cancelar" onPress={() => setModalVisible(false)} />
-                <Button title="Salvar" onPress={handleUpdateStock} />
-              </View>
+      <Modal
+        visible={isCategoryModalVisible}
+        onRequestClose={() => setCategoryModalVisible(false)}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Gerenciar Categorias</Text>
+            <FlatList
+              data={categories}
+              keyExtractor={item => item.id.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.categoryItem}>
+                  <Text style={styles.categoryName}>{item.name}</Text>
+                  <TouchableOpacity
+                    onPress={() => handleDeleteCategory(item.id)}
+                  >
+                    <Text style={styles.deleteButtonText}>Excluir</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
+            <View style={styles.modalButtonContainer}>
+              <Button
+                title="Adicionar Nova"
+                onPress={() => {
+                  setCategoryModalVisible(false);
+                  navigation.navigate('AddCategory', {
+                    onGoBack: fetchAllData,
+                  });
+                }}
+              />
+              <Button
+                title="Fechar"
+                onPress={() => setCategoryModalVisible(false)}
+                color="#888"
+              />
             </View>
           </View>
-        </Modal>
-      )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -163,67 +210,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F9FAFB',
   },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  header: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
+  loadingText: { marginTop: 10, fontSize: 16, color: '#6B7280' },
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  header: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1F2937',
     marginBottom: 16,
   },
-  addButton: {
+  button: {
     backgroundColor: '#22C55E',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
-  },
-  addButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  productList: {
-    paddingHorizontal: 8,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
     marginBottom: 10,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 20,
-    borderRadius: 5,
+  manageCategoryButton: { backgroundColor: '#3B82F6' },
+  buttonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+  productList: { paddingHorizontal: 8 },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  modalButtonContainer: {
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '60%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  categoryItem: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  categoryName: { fontSize: 16 },
+  deleteButtonText: { color: 'red', fontWeight: 'bold' },
+  modalButtonContainer: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    paddingTop: 20,
   },
 });
 
