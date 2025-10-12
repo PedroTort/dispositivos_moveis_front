@@ -8,7 +8,7 @@ import {
   RegisterPayload, 
   NewProductPayload, 
   UpdateProductPayload, 
-  CheckoutPayload, 
+  CheckoutPayload,
   NewCategoryPayload
 } from '../types';
 
@@ -42,7 +42,7 @@ export const registerUser = async (userData: RegisterPayload): Promise<User> => 
   return handleResponse(response);
 };
 
-// --- Produtos e Categorias ---
+// --- Rotas Públicas ---
 export const getProducts = async (): Promise<Product[]> => {
   const response = await fetch(`${BASE_URL}/products`);
   return handleResponse(response);
@@ -53,14 +53,27 @@ export const getCategories = async (): Promise<Category[]> => {
   return handleResponse(response);
 };
 
+// --- Rotas Protegidas ---
 export const addProduct = async (productData: NewProductPayload, token: string): Promise<Product> => {
   const response = await fetch(`${BASE_URL}/products`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      // 'Authorization': `Bearer ${token}`, // Descomente quando a proteção de rota estiver ativa no backend
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify(productData),
+  });
+  return handleResponse(response);
+};
+
+export const addCategory = async (categoryData: NewCategoryPayload, token: string): Promise<Category> => {
+  const response = await fetch(`${BASE_URL}/categories`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`, 
+    },
+    body: JSON.stringify(categoryData),
   });
   return handleResponse(response);
 };
@@ -70,7 +83,7 @@ export const updateProduct = async (productId: string, productData: UpdateProduc
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      // 'Authorization': `Bearer ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify(productData),
   });
@@ -81,13 +94,12 @@ export const deleteProduct = async (productId: string, token: string): Promise<v
   const response = await fetch(`${BASE_URL}/products/${productId}`, {
     method: 'DELETE',
     headers: {
-      // 'Authorization': `Bearer ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
   });
   await handleResponse(response);
 };
 
-// --- Pedidos (Checkout) ---
 export const finalizePurchase = async (cartItems: CartItem[], token: string): Promise<{ message: string }> => {
   const payload: CheckoutPayload = {
     items: cartItems.map(item => ({
@@ -99,27 +111,9 @@ export const finalizePurchase = async (cartItems: CartItem[], token: string): Pr
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      // 'Authorization': `Bearer ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
   });
-  return handleResponse(response);
-};
-
-export const addCategory = async (categoryData: NewCategoryPayload, token: string): Promise<Category> => {
-  const response = await fetch(`${BASE_URL}/categories`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      // 'Authorization': `Bearer ${token}`, 
-    },
-    body: JSON.stringify(categoryData),
-  });
-  return handleResponse(response);
-};
-
-// --- Teste ---
-export const testApiConnection = async () => {
-  const response = await fetch(`${BASE_URL}/`);
   return handleResponse(response);
 };

@@ -31,6 +31,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { getTotalItems, addToCart } = useCart();
   const { products, isLoading: isLoadingProducts } = useProducts();
 
+  // 1. Novo estado para controlar o texto da barra de busca
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState('1');
@@ -47,9 +50,20 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     fetchCategories();
   }, []);
 
-  const filteredProducts = selectedCategoryId
-    ? products.filter(p => p.category_id === selectedCategoryId)
-    : products;
+  // 2. Lógica de filtro combinada: aplica o filtro de categoria e depois o de busca
+  const filteredProducts = products
+    .filter(product => {
+      if (selectedCategoryId) {
+        return product.category_id === selectedCategoryId;
+      }
+      return true; 
+    })
+    .filter(product => {
+      if (searchQuery.trim() !== '') {
+        return product.name.toLowerCase().includes(searchQuery.toLowerCase().trim());
+      }
+      return true;
+    });
 
   const openQuantityModal = (product: Product) => {
     setSelectedProduct(product);
@@ -95,6 +109,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Nossa Loja</Text>
+        
+        {/* 3. Novo TextInput para a barra de busca */}
+        <TextInput
+          style={styles.searchBar}
+          placeholder="Buscar produto pelo nome..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScrollView}>
           <TouchableOpacity
             style={[styles.categoryButtonBase, selectedCategoryId === null ? styles.categoryButtonSelected : styles.categoryButton]}
@@ -164,6 +187,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
     color: '#1F2937',
+  },
+  searchBar: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 16,
+    fontSize: 16,
   },
   categoriesScrollView: {
     paddingBottom: 16,

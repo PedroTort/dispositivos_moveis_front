@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { testApiConnection } from '../../services/api';
+// import { testApiConnection } from '../../services/api';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -44,14 +44,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
   
-  const handleApiCall = async () => {
-    try {
-      const data = await testApiConnection();
-      Alert.alert('Resposta do Servidor', data.message);
-    } catch (error) {
-      Alert.alert('Erro de Conexão', 'Não foi possível se conectar ao servidor.');
-    }
-  };
+  // const handleApiCall = async () => {
+  //   try {
+  //     const data = await testApiConnection();
+  //     Alert.alert('Resposta do Servidor', data.message);
+  //   } catch (error) {
+  //     Alert.alert('Erro de Conexão', 'Não foi possível se conectar ao servidor.');
+  //   }
+  // };
 
   return (
     <KeyboardAvoidingView
@@ -102,9 +102,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.apiButton} onPress={handleApiCall}>
+          {/* <TouchableOpacity style={styles.apiButton} onPress={handleApiCall}>
             <Text style={styles.buttonText}>Testar Conexão</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           
         </View>
       </View>
