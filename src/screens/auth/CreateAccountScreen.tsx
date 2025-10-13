@@ -41,8 +41,14 @@ const CreateAccountScreen: React.FC<CreateAccountScreenProps> = ({ navigation })
 
     try {
       await register(name, email, password);
-      // Se o registro e login forem bem-sucedidos, o AppNavigator mudará de tela automaticamente.
-      // Um alerta de sucesso aqui pode não ser visto pelo usuário, pois a tela mudará.
+
+      Alert.alert(
+        'Conta Criada!',
+        'Sua conta foi criada com sucesso. Por favor, faça o login.',
+        [
+          { text: 'OK', onPress: () => navigation.goBack() }
+        ]
+      );
     } catch (error) {
       // Exibe um erro genérico que cobre o caso de e-mail já existente.
       Alert.alert('Erro no Registro', 'Não foi possível criar a conta. Verifique se o e-mail já está em uso e tente novamente.');

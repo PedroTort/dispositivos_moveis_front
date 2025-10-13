@@ -43,13 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (name: string, email: string, password: string) => {
     setIsLoading(true);
     try {
-      // 1. Chama a API para criar o novo usuário no banco de dados.
       const newUser = await api.registerUser({ name, email, password });
-      
-      // 2. Se o registro foi bem-sucedido, faz o login para obter o token e atualizar o estado.
-      if (newUser) {
-        await login(email, password);
-      }
     } catch (error) {
       console.error("Falha no registro:", error);
       throw error;

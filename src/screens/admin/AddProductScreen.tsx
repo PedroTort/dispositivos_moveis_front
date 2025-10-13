@@ -20,7 +20,6 @@ import * as api from '../../services/api';
 type Props = NativeStackScreenProps<AdminStackParamList, 'AddProduct'>;
 
 const AddProductScreen: React.FC<Props> = ({ route, navigation }) => {
-  // CORREÇÃO AQUI: Recebendo 'onGoBack' dos parâmetros da rota
   const { onGoBack } = route.params;
   const { token } = useAuth();
 
