@@ -2,17 +2,15 @@ import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image } from 'react-native';
 import { useCart } from '../../contexts/CartContext';
 import { useProducts } from '../../contexts/ProductContext';
-import { useAuth } from '../../contexts/AuthContext'; // 1. Importar useAuth para pegar o token
-import * as api from '../../services/api'; // 2. Importar a camada de API
+import { useAuth } from '../../contexts/AuthContext'; 
+import * as api from '../../services/api'; 
 import { CartItem } from '../../types';
 
 const CartScreen = () => {
-  // 3. Pegar as funções necessárias dos contextos (incluindo o token)
   const { items, addToCart, decreaseCartItem, removeFromCart, getTotalPrice, clearCart } = useCart();
   const { fetchProducts } = useProducts();
   const { token } = useAuth();
 
-  // 4. Lógica de finalização de compra atualizada para usar a API
   const handleFinalizePurchase = () => {
     if (!token) {
       Alert.alert('Erro', 'Você precisa estar logado para finalizar a compra.');
@@ -27,15 +25,13 @@ const CartScreen = () => {
           text: "Confirmar",
           onPress: async () => {
             try {
-              // Chama a API para finalizar a compra no backend
               await api.finalizePurchase(items, token);
               Alert.alert('Compra Finalizada!', 'Obrigado por comprar conosco.');
-              clearCart(); // Limpa o carrinho localmente
-              await fetchProducts(); // Atualiza a lista global de produtos
+              clearCart(); 
+              await fetchProducts();
             } catch (error) {
               const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro desconhecido.';
               Alert.alert('Erro na Compra', `Não foi possível finalizar a compra: ${errorMessage}`);
-              // Recarrega os produtos para garantir que o usuário veja o estoque mais atualizado
               await fetchProducts();
             }
           },
@@ -91,7 +87,6 @@ const CartScreen = () => {
   );
 };
 
-// Seus estilos foram mantidos exatamente como você forneceu
 const styles = StyleSheet.create({
   container: {
     flex: 1,

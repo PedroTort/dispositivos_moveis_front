@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Product } from '../types';
-import * as api from '../services/api'; // Importando a camada de API
+import * as api from '../services/api';
 
 interface ProductContextType {
   products: Product[];
   isLoading: boolean;
-  fetchProducts: () => Promise<void>; // Função para recarregar os produtos
+  fetchProducts: () => Promise<void>;
   updateProductStock: (productId: string, quantitySold: number) => void;
 }
 
@@ -34,13 +34,11 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       setProducts(fetchedProducts);
     } catch (error) {
       console.error("Erro ao buscar produtos:", error);
-      // Aqui você poderia adicionar um estado de erro para mostrar na UI
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Busca os produtos assim que o provedor é montado
   useEffect(() => {
     fetchProducts();
   }, []);

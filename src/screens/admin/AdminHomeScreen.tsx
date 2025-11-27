@@ -124,7 +124,6 @@ const AdminHomeScreen = () => {
         <Text style={styles.headerTitle}>Gerenciar</Text>
         <TouchableOpacity
           style={styles.button}
-          // CORREÇÃO AQUI: 'addProduct' foi renomeado para 'onGoBack'
           onPress={() =>
             navigation.navigate('AddProduct', { onGoBack: fetchAllData })
           }

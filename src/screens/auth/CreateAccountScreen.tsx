@@ -50,7 +50,6 @@ const CreateAccountScreen: React.FC<CreateAccountScreenProps> = ({ navigation })
         ]
       );
     } catch (error) {
-      // Exibe um erro genérico que cobre o caso de e-mail já existente.
       Alert.alert('Erro no Registro', 'Não foi possível criar a conta. Verifique se o e-mail já está em uso e tente novamente.');
     }
   };

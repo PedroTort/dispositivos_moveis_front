@@ -24,8 +24,8 @@ const UserTabs = () => {
           else if (route.name === 'Profile') iconName = '👤';
           return <Text style={{ fontSize: size, color }}>{iconName}</Text>;
         },
-        tabBarActiveTintColor: '#3B82F6', // Cor do ícone ativo
-        tabBarInactiveTintColor: 'gray',   // Cor do ícone inativo
+        tabBarActiveTintColor: '#3B82F6', 
+        tabBarInactiveTintColor: 'gray',  
       })}
     >
       <Tab.Screen 

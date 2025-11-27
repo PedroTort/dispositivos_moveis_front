@@ -8,9 +8,9 @@ import { Product } from '../types';
 
 export type AdminStackParamList = {
   AdminHome: undefined;
-  AddProduct: { onGoBack: () => void }; // Renomeado para consistência
-  AddCategory: { onGoBack: () => void }; // Adicionado callback
-  EditProduct: { product: Product; onGoBack: () => void }; // Adicionado callback
+  AddProduct: { onGoBack: () => void }; 
+  AddCategory: { onGoBack: () => void }; 
+  EditProduct: { product: Product; onGoBack: () => void }; 
 };
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();

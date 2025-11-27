@@ -71,7 +71,7 @@ const AddProductScreen: React.FC<Props> = ({ route, navigation }) => {
     try {
       await api.addProduct(payload, token);
       Alert.alert('Sucesso', 'Produto adicionado com sucesso!');
-      onGoBack(); // Chama a função para atualizar a tela anterior
+      onGoBack();
       navigation.goBack();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro.';

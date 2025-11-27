@@ -31,7 +31,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { getTotalItems, addToCart } = useCart();
   const { products, isLoading: isLoadingProducts } = useProducts();
 
-  // 1. Novo estado para controlar o texto da barra de busca
   const [searchQuery, setSearchQuery] = useState('');
 
   const [modalVisible, setModalVisible] = useState(false);

@@ -39,19 +39,19 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   button: {
-    backgroundColor: '#E5E7EB', // bg-gray-200
+    backgroundColor: '#E5E7EB', 
   },
   buttonSelected: {
-    backgroundColor: '#3B82F6', // bg-blue-500
+    backgroundColor: '#3B82F6', 
   },
   textBase: {
     fontWeight: '600',
   },
   text: {
-    color: '#374151', // text-gray-700
+    color: '#374151',
   },
   textSelected: {
-    color: '#FFFFFF', // text-white
+    color: '#FFFFFF', 
   },
 });
 

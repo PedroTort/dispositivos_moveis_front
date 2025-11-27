@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-// import { testApiConnection } from '../../services/api';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -35,23 +34,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
 
     try {
-      // A função de login agora é async
       await login(email, password);
-      // Se o login for bem-sucedido, o AppNavigator fará a transição de tela
-      // automaticamente, pois o estado 'user' no AuthContext mudou.
     } catch (error) {
       Alert.alert('Erro no Login', 'Email ou senha incorretos. Por favor, tente novamente.');
     }
   };
   
-  // const handleApiCall = async () => {
-  //   try {
-  //     const data = await testApiConnection();
-  //     Alert.alert('Resposta do Servidor', data.message);
-  //   } catch (error) {
-  //     Alert.alert('Erro de Conexão', 'Não foi possível se conectar ao servidor.');
-  //   }
-  // };
 
   return (
     <KeyboardAvoidingView
@@ -69,7 +57,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
-            editable={!isLoading} // Desabilita o campo durante o carregamento
+            editable={!isLoading}
           />
           
           <TextInput
@@ -100,12 +88,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             <Text style={styles.createAccountButtonText}>
               Criar nova conta
             </Text>
-          </TouchableOpacity>
-
-          {/* <TouchableOpacity style={styles.apiButton} onPress={handleApiCall}>
-            <Text style={styles.buttonText}>Testar Conexão</Text>
-          </TouchableOpacity> */}
-          
+          </TouchableOpacity>    
         </View>
       </View>
     </KeyboardAvoidingView>

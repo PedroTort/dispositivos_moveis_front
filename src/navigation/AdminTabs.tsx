@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import AdminStack from './AdminStack'; // Importando o novo Stack Navigator
+import AdminStack from './AdminStack'; 
 import ProfileScreen from '../screens/user/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
@@ -18,17 +18,17 @@ const AdminTabs = () => {
         },
         tabBarActiveTintColor: '#EF4444',
         tabBarInactiveTintColor: 'gray',
-        headerShown: false, // Oculta o header da TabNavigator
+        headerShown: false, 
       })}>
       <Tab.Screen
         name="GerenciarStack"
-        component={AdminStack} // Usando o AdminStack aqui
+        component={AdminStack} 
         options={{ title: 'Gerenciar' }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{ title: 'Perfil', headerShown: true }} // Mostra o header na tela de perfil se desejar
+        options={{ title: 'Perfil', headerShown: true }} 
       />
     </Tab.Navigator>
   );

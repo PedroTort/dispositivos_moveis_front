@@ -62,7 +62,7 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6', // bg-gray-100
+    backgroundColor: '#F3F4F6', 
     padding: 20,
   },
   card: {
@@ -87,14 +87,14 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: '#6B7280', // text-gray-500
+    color: '#6B7280', 
   },
   info: {
     fontSize: 18,
-    color: '#111827', // text-gray-900
+    color: '#111827', 
   },
   logoutButton: {
-    backgroundColor: '#EF4444', // bg-red-500
+    backgroundColor: '#EF4444', 
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',

@@ -45,7 +45,7 @@ const EditProductScreen: React.FC<Props> = ({ route, navigation }) => {
     try {
       await api.updateProduct(product.id.toString(), payload, token);
       Alert.alert('Sucesso', 'Produto atualizado com sucesso!');
-      onGoBack(); // Chama a função de atualização da tela anterior
+      onGoBack();
       navigation.goBack();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro.';

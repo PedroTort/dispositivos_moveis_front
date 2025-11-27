@@ -23,7 +23,7 @@ const AddCategoryScreen: React.FC<Props> = ({ route, navigation }) => {
     try {
       await api.addCategory({ name: name.trim() }, token);
       Alert.alert('Sucesso', 'Nova categoria adicionada!');
-      onGoBack(); // Chama a função de atualização da tela anterior
+      onGoBack(); 
       navigation.goBack();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro.';
